@@ -165,13 +165,20 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardFooter className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild className="gap-2">
+              <Button
+                asChild
+                className="gap-2 shadow-rose-500/20 hover:shadow-rose-500/40"
+              >
                 <a href="#projects">
                   주요 프로젝트 보기
                   <ArrowUpRight className="h-4 w-4" />
                 </a>
               </Button>
-              <Button asChild variant="outline" className="gap-2">
+              <Button
+                asChild
+                variant="outline"
+                className="gap-2 border-rose-100 text-rose-600 hover:bg-rose-50 dark:border-rose-500/40 dark:hover:bg-rose-500/10"
+              >
                 <a href="#contact">연락 정보로 이동</a>
               </Button>
             </CardFooter>
@@ -272,13 +279,23 @@ export default function Home() {
                     ))}
                   </div>
                   <div className="mt-auto flex flex-wrap gap-2">
-                    <Button asChild size="sm" variant="ghost" className="gap-1">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 text-zinc-600 hover:bg-rose-50 hover:text-rose-600 dark:text-zinc-200 dark:hover:bg-rose-500/10"
+                    >
                       <a href={project.repo} target="_blank" rel="noopener noreferrer">
                         <Github className="h-4 w-4" />
                         GitHub
                       </a>
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="gap-1">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 border-rose-100 text-rose-600 hover:bg-rose-50 dark:border-rose-500/40 dark:hover:bg-rose-500/10"
+                    >
                       <a href={project.live} target="_blank" rel="noopener noreferrer">
                         <LinkIcon className="h-4 w-4" />
                         포트폴리오
@@ -327,13 +344,21 @@ export default function Home() {
                             연결된 링크
                           </h4>
                           <div className="flex flex-col gap-3">
-                            <Button asChild variant="ghost" className="justify-start gap-2">
+                            <Button
+                              asChild
+                              variant="ghost"
+                              className="justify-start gap-2 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
+                            >
                               <a href={project.repo} target="_blank" rel="noopener noreferrer">
                                 <Github className="h-4 w-4" />
                                 GitHub 저장소
                               </a>
                             </Button>
-                            <Button asChild variant="ghost" className="justify-start gap-2">
+                            <Button
+                              asChild
+                              variant="ghost"
+                              className="justify-start gap-2 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
+                            >
                               <a href={project.live} target="_blank" rel="noopener noreferrer">
                                 <LinkIcon className="h-4 w-4" />
                                 라이브 데모
@@ -343,12 +368,21 @@ export default function Home() {
                         </div>
                       </div>
                       <DialogFooter className="gap-2">
-                        <Button variant="secondary" asChild size="sm">
+                        <Button
+                          variant="secondary"
+                          asChild
+                          size="sm"
+                          className="shadow-rose-500/20 hover:shadow-rose-500/40"
+                        >
                           <a href={project.live} target="_blank" rel="noopener noreferrer">
                             실제 화면 보기
                           </a>
                         </Button>
-                        <Button asChild size="sm">
+                        <Button
+                          asChild
+                          size="sm"
+                          className="shadow-rose-500/20 hover:shadow-rose-500/40"
+                        >
                           <a href={project.repo} target="_blank" rel="noopener noreferrer">
                             코드 확인하기
                           </a>
@@ -407,20 +441,21 @@ export default function Home() {
             </CardHeader>
             <CardContent className="grid gap-5 md:grid-cols-3">
               {contacts.map((contact) => (
-                <div key={contact.label} className="space-y-2 rounded-2xl border border-zinc-100 p-3 dark:border-zinc-800">
-                  <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-                    <contact.icon className="h-4 w-4 text-rose-500" />
+                <a
+                  key={contact.label}
+                  href={contact.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col space-y-2 rounded-2xl border border-zinc-100 p-3 transition-all duration-200 hover:-translate-y-1 hover:border-rose-200 hover:bg-white hover:shadow-lg dark:border-zinc-800 dark:hover:border-rose-500/40 dark:hover:bg-zinc-900"
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-500 group-hover:text-rose-500">
+                    <contact.icon className="h-4 w-4 text-rose-500 group-hover:text-rose-400" />
                     {contact.label}
                   </div>
-                  <a
-                    href={contact.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-base font-semibold text-rose-500 hover:underline"
-                  >
+                  <span className="text-base font-semibold text-rose-500 group-hover:text-rose-600 dark:group-hover:text-rose-300">
                     {contact.value}
-                  </a>
-                </div>
+                  </span>
+                </a>
               ))}
             </CardContent>
           </Card>
