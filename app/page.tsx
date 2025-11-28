@@ -1,7 +1,8 @@
  "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ArrowUpRight, Github, Linkedin, Link as LinkIcon, Mail } from "lucide-react";
+import { ArrowUpRight, Github, Linkedin, Link as LinkIcon, Mail, MessageSquare, Heart, Sparkles, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const heroImage =
   "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80";
@@ -460,7 +462,654 @@ export default function Home() {
             </CardContent>
           </Card>
         </section>
+
+        <Separator className="my-3" />
+
+        <ApiPracticeSection />
       </main>
+    </div>
+  );
+}
+
+// API 실습 섹션 컴포넌트
+function ApiPracticeSection() {
+  return (
+    <section id="api-practice" className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <div className="h-1 w-12 bg-gradient-to-r from-rose-500 to-pink-500 rounded-full" />
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 bg-clip-text text-transparent">
+            API 실습
+          </h2>
+        </div>
+        <p className="text-zinc-600 dark:text-zinc-400 text-sm">
+          다양한 API 기능을 실시간으로 테스트해보세요.
+        </p>
+      </div>
+
+      <Card className="overflow-hidden border-2 border-zinc-200/80 dark:border-zinc-800/80 shadow-xl shadow-rose-500/5 dark:shadow-rose-500/10">
+        <CardHeader className="pb-3">
+          <Tabs defaultValue="guestbook" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-zinc-100/50 dark:bg-zinc-800/50 p-1.5 rounded-xl">
+              <TabsTrigger
+                value="guestbook"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-rose-600 dark:data-[state=active]:bg-zinc-900 dark:data-[state=active]:text-rose-400 transition-all duration-200 hover:scale-[1.02]"
+              >
+                <MessageSquare className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                <span className="hidden sm:inline">방명록</span>
+                <span className="sm:hidden">방명록</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="like"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-rose-600 dark:data-[state=active]:bg-zinc-900 dark:data-[state=active]:text-rose-400 transition-all duration-200 hover:scale-[1.02]"
+              >
+                <Heart className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                <span className="hidden sm:inline">좋아요</span>
+                <span className="sm:hidden">좋아요</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="recommend"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-rose-600 dark:data-[state=active]:bg-zinc-900 dark:data-[state=active]:text-rose-400 transition-all duration-200 hover:scale-[1.02]"
+              >
+                <Sparkles className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                <span className="hidden sm:inline">랜덤 추천</span>
+                <span className="sm:hidden">추천</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="guestbook" className="mt-6 animate-in fade-in-50 duration-300">
+              <GuestbookTab />
+            </TabsContent>
+
+            <TabsContent value="like" className="mt-6 animate-in fade-in-50 duration-300">
+              <LikeTab />
+            </TabsContent>
+
+            <TabsContent value="recommend" className="mt-6 animate-in fade-in-50 duration-300">
+              <RecommendTab />
+            </TabsContent>
+          </Tabs>
+        </CardHeader>
+      </Card>
+    </section>
+  );
+}
+
+// 방명록 탭 컴포넌트
+function GuestbookTab() {
+  const [entries, setEntries] = useState<Array<{ id: string; name: string; message: string; createdAt: string }>>([]);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // 방명록 목록 불러오기
+  const fetchEntries = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/guestbook");
+      if (response.ok) {
+        const data = await response.json();
+        setEntries(data);
+      }
+    } catch (error) {
+      console.error("방명록을 불러오는 중 오류가 발생했습니다:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 방명록 불러오기
+  useEffect(() => {
+    fetchEntries();
+  }, []);
+
+  // 방명록 작성
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!name.trim() || !message.trim()) {
+      alert("이름과 메시지를 모두 입력해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/guestbook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, message }),
+      });
+
+      if (response.ok) {
+        const newEntry = await response.json();
+        setEntries([newEntry, ...entries]);
+        setName("");
+        setMessage("");
+      } else {
+        const error = await response.json();
+        alert(error.error || "방명록 작성에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("방명록 작성 중 오류가 발생했습니다:", error);
+      alert("방명록 작성에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 방명록 삭제 확인 시작
+  const handleDeleteClick = (id: string) => {
+    setDeletingId(id);
+  };
+
+  // 방명록 삭제 취소
+  const handleDeleteCancel = () => {
+    setDeletingId(null);
+  };
+
+  // 방명록 삭제 실행
+  const handleDeleteConfirm = async (id: string) => {
+    try {
+      const response = await fetch("/api/guestbook", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      if (response.ok) {
+        setEntries(entries.filter((entry) => entry.id !== id));
+        setDeletingId(null);
+      } else {
+        const error = await response.json();
+        alert(error.error || "방명록 삭제에 실패했습니다.");
+        setDeletingId(null);
+      }
+    } catch (error) {
+      console.error("방명록 삭제 중 오류가 발생했습니다:", error);
+      alert("방명록 삭제에 실패했습니다.");
+      setDeletingId(null);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-rose-500/10 rounded-2xl blur-xl" />
+        <Card className="relative border-2 border-rose-100/50 dark:border-rose-900/30 bg-gradient-to-br from-white to-rose-50/30 dark:from-zinc-900 dark:to-rose-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30">
+                <MessageSquare className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              방명록 남기기
+            </CardTitle>
+            <CardDescription>
+              이름과 메시지를 남겨주세요. 실시간으로 방명록에 추가됩니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  이름
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={50}
+                  placeholder="이름을 입력하세요"
+                  className="w-full px-4 py-3 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="message" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  메시지
+                </label>
+                <textarea
+                  id="message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  maxLength={500}
+                  rows={4}
+                  placeholder="메시지를 입력하세요"
+                  className="w-full px-4 py-3 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200 resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                  required
+                />
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-zinc-500">{message.length}/500</p>
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full shadow-lg shadow-rose-500/25 hover:shadow-xl hover:shadow-rose-500/30 transition-all duration-200"
+                size="lg"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    작성 중...
+                  </span>
+                ) : (
+                  "방명록 남기기"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold">방명록 목록</h3>
+          <Badge variant="secondary" className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+            {entries.length}개
+          </Badge>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+              <p className="text-sm text-zinc-500">로딩 중...</p>
+            </div>
+          </div>
+        ) : entries.length === 0 ? (
+          <Card className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/30">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <MessageSquare className="h-12 w-12 text-zinc-400 dark:text-zinc-600 mb-3" />
+              <p className="text-sm text-zinc-500 font-medium">아직 방명록이 없습니다</p>
+              <p className="text-xs text-zinc-400 mt-1">첫 번째 방명록을 남겨보세요!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {entries.map((entry, index) => (
+              <Card
+                key={entry.id}
+                className="group relative overflow-hidden border-2 border-zinc-200/80 dark:border-zinc-800/80 bg-gradient-to-br from-white to-zinc-50/50 dark:from-zinc-900 dark:to-zinc-950/50 hover:border-rose-300 dark:hover:border-rose-800/50 transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/10 hover:-translate-y-1"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-rose-500/0 via-pink-500/0 to-rose-500/0 group-hover:from-rose-500/5 group-hover:via-pink-500/5 group-hover:to-rose-500/5 transition-all duration-300" />
+                <CardContent className="relative p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-rose-500/30">
+                        {entry.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">{entry.name}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                        {formatDate(entry.createdAt)}
+                      </span>
+                      {deletingId === entry.id ? (
+                        <div className="flex items-center gap-2 animate-in fade-in-50 duration-200">
+                          <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">삭제하시겠습니까?</span>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleDeleteConfirm(entry.id)}
+                            className="h-7 px-3 text-xs bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+                          >
+                            삭제
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDeleteCancel}
+                            className="h-7 px-3 text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                          >
+                            취소
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(entry.id)}
+                          className="h-8 w-8 p-0 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-950/30 transition-colors"
+                          title="삭제"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed ml-[52px]">
+                    {entry.message}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 좋아요 탭 컴포넌트
+function LikeTab() {
+  const [items, setItems] = useState<Array<{ id: string; title: string; description: string; count: number; createdAt: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  // localStorage에서 좋아요 상태 불러오기
+  useEffect(() => {
+    const savedLikes = localStorage.getItem("vibe-coding-likes");
+    if (savedLikes) {
+      try {
+        const parsed = JSON.parse(savedLikes);
+        setLikedIds(new Set(parsed));
+      } catch (error) {
+        console.error("좋아요 상태를 불러오는 중 오류가 발생했습니다:", error);
+      }
+    }
+  }, []);
+
+  // 좋아요 상태를 localStorage에 저장
+  const saveLikedIds = (ids: Set<string>) => {
+    try {
+      localStorage.setItem("vibe-coding-likes", JSON.stringify(Array.from(ids)));
+    } catch (error) {
+      console.error("좋아요 상태를 저장하는 중 오류가 발생했습니다:", error);
+    }
+  };
+
+  // 좋아요 항목 목록 불러오기
+  const fetchItems = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/likes");
+      if (response.ok) {
+        const data = await response.json();
+        setItems(data);
+      }
+    } catch (error) {
+      console.error("좋아요 항목을 불러오는 중 오류가 발생했습니다:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 항목 불러오기
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  // 좋아요 토글 (인스타그램 스타일)
+  const handleLikeToggle = async (id: string) => {
+    const isLiked = likedIds.has(id);
+    const newLikedIds = new Set(likedIds);
+
+    if (isLiked) {
+      // 좋아요 취소
+      newLikedIds.delete(id);
+    } else {
+      // 좋아요 추가
+      newLikedIds.add(id);
+    }
+
+    setLikedIds(newLikedIds);
+    saveLikedIds(newLikedIds);
+
+    // 서버에는 상태만 동기화 (실제 카운트는 서버에서 관리)
+    // 같은 사용자의 좋아요는 카운트에 영향을 주지 않음
+    try {
+      await fetch("/api/likes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id, action: isLiked ? "unlike" : "like" }),
+      });
+    } catch (error) {
+      console.error("좋아요 상태 동기화 중 오류가 발생했습니다:", error);
+      // 실패해도 클라이언트 상태는 유지
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-rose-500/10 rounded-2xl blur-xl" />
+        <Card className="relative border-2 border-rose-100/50 dark:border-rose-900/30 bg-gradient-to-br from-white to-rose-50/30 dark:from-zinc-900 dark:to-rose-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30">
+                <Heart className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              좋아요 투표
+            </CardTitle>
+            <CardDescription>
+              좋아요 버튼을 누르면 숫자가 올라가는 투표 기능입니다.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+              <p className="text-sm text-zinc-500">로딩 중...</p>
+            </div>
+          </div>
+        ) : items.length === 0 ? (
+          <Card className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/30">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Heart className="h-12 w-12 text-zinc-400 dark:text-zinc-600 mb-3" />
+              <p className="text-sm text-zinc-500 font-medium">아직 투표 항목이 없습니다</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {items.map((item, index) => (
+              <Card
+                key={item.id}
+                className="group relative overflow-hidden border-2 border-zinc-200/80 dark:border-zinc-800/80 bg-gradient-to-br from-white to-zinc-50/50 dark:from-zinc-900 dark:to-zinc-950/50 hover:border-rose-300 dark:hover:border-rose-800/50 transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/10 hover:-translate-y-1"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-rose-500/0 via-pink-500/0 to-rose-500/0 group-hover:from-rose-500/5 group-hover:via-pink-500/5 group-hover:to-rose-500/5 transition-all duration-300" />
+                <CardContent className="relative p-6">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        {item.description}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => handleLikeToggle(item.id)}
+                      onMouseEnter={() => setHoveredId(item.id)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      className={`flex flex-col items-center justify-center gap-1 h-auto px-4 py-3 min-w-[80px] shadow-lg transition-all duration-200 ${
+                        likedIds.has(item.id)
+                          ? "bg-gradient-to-br from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white"
+                          : "bg-gradient-to-br from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white"
+                      } ${
+                        hoveredId === item.id
+                          ? "scale-110 shadow-xl shadow-rose-500/50"
+                          : "hover:scale-105 shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40"
+                      }`}
+                    >
+                      <Heart
+                        className={`h-5 w-5 transition-all duration-200 ${
+                          likedIds.has(item.id) ? "fill-white scale-110" : "fill-transparent"
+                        } ${
+                          hoveredId === item.id ? "scale-125" : ""
+                        }`}
+                      />
+                      <span className="text-lg font-bold">
+                        {item.count + (likedIds.has(item.id) ? 1 : 0)}
+                      </span>
+                      <span className="text-xs opacity-90">좋아요</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 랜덤 추천 탭 컴포넌트
+function RecommendTab() {
+  const [recommendation, setRecommendation] = useState<{ id: string; text: string; author?: string; category: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 랜덤 추천 문구 불러오기
+  const fetchRecommendation = async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+    try {
+      const response = await fetch("/api/recommendations");
+      if (response.ok) {
+        const data = await response.json();
+        setRecommendation(data);
+      }
+    } catch (error) {
+      console.error("추천 문구를 불러오는 중 오류가 발생했습니다:", error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 추천 문구 불러오기
+  useEffect(() => {
+    fetchRecommendation();
+  }, []);
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case "motivation":
+        return "격려";
+      case "quote":
+        return "명언";
+      case "coding":
+        return "코딩";
+      default:
+        return "추천";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-rose-500/10 rounded-2xl blur-xl" />
+        <Card className="relative border-2 border-rose-100/50 dark:border-rose-900/30 bg-gradient-to-br from-white to-rose-50/30 dark:from-zinc-900 dark:to-rose-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30">
+                <Sparkles className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              오늘의 한 줄 추천
+            </CardTitle>
+            <CardDescription>
+              바이브 코딩을 시작하는 분들을 위한 격려 문구와 세계 명언을 랜덤으로 제공합니다.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        {isLoading ? (
+          <Card className="border-2 border-zinc-200/80 dark:border-zinc-800/80">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <div className="h-8 w-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin mb-4" />
+              <p className="text-sm text-zinc-500">추천 문구를 불러오는 중...</p>
+            </CardContent>
+          </Card>
+        ) : recommendation ? (
+          <Card className="group relative overflow-hidden border-2 border-rose-200/80 dark:border-rose-800/50 bg-gradient-to-br from-white via-rose-50/30 to-pink-50/30 dark:from-zinc-900 dark:via-rose-950/20 dark:to-pink-950/20 hover:border-rose-300 dark:hover:border-rose-700/50 transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/20">
+            <div className="absolute inset-0 bg-gradient-to-r from-rose-500/0 via-pink-500/0 to-rose-500/0 group-hover:from-rose-500/5 group-hover:via-pink-500/5 group-hover:to-rose-500/5 transition-all duration-300" />
+            <CardContent className="relative p-8">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30 shadow-lg shadow-rose-500/20">
+                  <Sparkles className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+                </div>
+                <div className="flex-1">
+                  <Badge variant="secondary" className="mb-3 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+                    {getCategoryLabel(recommendation.category)}
+                  </Badge>
+                  <p className="text-xl font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed mb-3">
+                    "{recommendation.text}"
+                  </p>
+                  {recommendation.author && (
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400 italic">
+                      — {recommendation.author}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => fetchRecommendation(true)}
+                  disabled={isRefreshing}
+                  className="gap-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 transition-all duration-200"
+                >
+                  {isRefreshing ? (
+                    <>
+                      <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      새로고침 중...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      다른 추천 보기
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/30">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Sparkles className="h-12 w-12 text-zinc-400 dark:text-zinc-600 mb-3" />
+              <p className="text-sm text-zinc-500 font-medium">추천 문구를 불러올 수 없습니다</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
