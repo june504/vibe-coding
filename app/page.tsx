@@ -41,6 +41,9 @@ type Project = {
   highlights: string[];
 };
 
+// ⚠️ 주의: 이제 Supabase 데이터베이스에서 API를 통해 데이터를 가져옵니다.
+// 아래 하드코딩된 데이터는 주석처리되었습니다.
+/* 주석처리됨 - Supabase 데이터베이스 사용
 const projects: Project[] = [
   {
     title: "데이터 시각화 대시보드",
@@ -91,7 +94,10 @@ const projects: Project[] = [
     ],
   },
 ];
+*/
 
+const experiences: Array<{ period: string; role: string; details: string[] }> = [];
+/* 주석처리됨 - Supabase 데이터베이스 사용
 const experiences = [
   {
     period: "2024.03 - 현재",
@@ -110,6 +116,7 @@ const experiences = [
     ],
   },
 ];
+*/
 
 const skills = [
   "TypeScript",
@@ -149,6 +156,53 @@ const contacts: Contact[] = [
 ];
 
 export default function Home() {
+  // ⚠️ 주의: 이제 Supabase 데이터베이스를 사용하므로 하드코딩된 데이터는 사용되지 않습니다.
+  // API를 통해 데이터를 가져옵니다.
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [experiences, setExperiences] = useState<Array<{ period: string; role: string; details: string[] }>>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [isLoadingExperiences, setIsLoadingExperiences] = useState(true);
+
+  // 프로젝트 데이터 가져오기
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch("/api/projects");
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data);
+        } else {
+          console.error("프로젝트를 불러오는 중 오류가 발생했습니다.");
+        }
+      } catch (error) {
+        console.error("프로젝트를 불러오는 중 오류가 발생했습니다:", error);
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  // 경력 데이터 가져오기
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      try {
+        const response = await fetch("/api/experiences");
+        if (response.ok) {
+          const data = await response.json();
+          setExperiences(data);
+        } else {
+          console.error("경력을 불러오는 중 오류가 발생했습니다.");
+        }
+      } catch (error) {
+        console.error("경력을 불러오는 중 오류가 발생했습니다:", error);
+      } finally {
+        setIsLoadingExperiences(false);
+      }
+    };
+    fetchExperiences();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-zinc-100 text-zinc-900 dark:from-black dark:via-zinc-950 dark:to-black dark:text-zinc-100">
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-3 py-12 sm:px-6 lg:px-8">
@@ -248,7 +302,23 @@ export default function Home() {
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2">
-            {projects.map((project) => (
+            {isLoadingProjects ? (
+              <div className="col-span-2 flex items-center justify-center py-12">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+                  <p className="text-sm text-zinc-500">프로젝트를 불러오는 중...</p>
+                </div>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="col-span-2">
+                <Card className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/30">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <p className="text-sm text-zinc-500 font-medium">프로젝트가 없습니다</p>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              projects.map((project) => (
               <Card
                 key={project.title}
                 className="flex h-full flex-col border-rose-100/40 dark:border-rose-500/20"
@@ -394,7 +464,8 @@ export default function Home() {
                   </Dialog>
                 </CardFooter>
               </Card>
-            ))}
+            ))
+            )}
           </div>
         </section>
 
@@ -408,7 +479,23 @@ export default function Home() {
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2">
-            {experiences.map((experience) => (
+            {isLoadingExperiences ? (
+              <div className="col-span-2 flex items-center justify-center py-12">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+                  <p className="text-sm text-zinc-500">경력을 불러오는 중...</p>
+                </div>
+              </div>
+            ) : experiences.length === 0 ? (
+              <div className="col-span-2">
+                <Card className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/30">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <p className="text-sm text-zinc-500 font-medium">경력이 없습니다</p>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              experiences.map((experience) => (
               <Card key={experience.role}>
                 <CardHeader className="gap-3">
                   <div className="flex flex-col gap-2">
@@ -429,7 +516,8 @@ export default function Home() {
                   </ul>
                 </CardContent>
               </Card>
-            ))}
+            ))
+            )}
           </div>
         </section>
 
@@ -549,12 +637,17 @@ function GuestbookTab() {
     setIsLoading(true);
     try {
       const response = await fetch("/api/guestbook");
+      const data = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
         setEntries(data);
+      } else {
+        console.error("방명록 불러오기 실패:", data);
+        alert(`방명록을 불러올 수 없습니다: ${data.error || data.details || "알 수 없는 오류"}`);
       }
     } catch (error) {
       console.error("방명록을 불러오는 중 오류가 발생했습니다:", error);
+      alert("방명록을 불러오는 중 네트워크 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -584,14 +677,15 @@ function GuestbookTab() {
         body: JSON.stringify({ name, message }),
       });
 
+      const result = await response.json();
+      
       if (response.ok) {
-        const newEntry = await response.json();
-        setEntries([newEntry, ...entries]);
+        setEntries([result, ...entries]);
         setName("");
         setMessage("");
       } else {
-        const error = await response.json();
-        alert(error.error || "방명록 작성에 실패했습니다.");
+        console.error("방명록 작성 실패:", result);
+        alert(`방명록 작성에 실패했습니다: ${result.error || result.details || "알 수 없는 오류"}`);
       }
     } catch (error) {
       console.error("방명록 작성 중 오류가 발생했습니다:", error);
@@ -622,12 +716,14 @@ function GuestbookTab() {
         body: JSON.stringify({ id }),
       });
 
+      const result = await response.json();
+      
       if (response.ok) {
         setEntries(entries.filter((entry) => entry.id !== id));
         setDeletingId(null);
       } else {
-        const error = await response.json();
-        alert(error.error || "방명록 삭제에 실패했습니다.");
+        console.error("방명록 삭제 실패:", result);
+        alert(`방명록 삭제에 실패했습니다: ${result.error || result.details || "알 수 없는 오류"}`);
         setDeletingId(null);
       }
     } catch (error) {
@@ -1001,12 +1097,17 @@ function RecommendTab() {
     }
     try {
       const response = await fetch("/api/recommendations");
+      const data = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
         setRecommendation(data);
+      } else {
+        console.error("추천 문구 불러오기 실패:", data);
+        alert(`추천 문구를 불러올 수 없습니다: ${data.error || data.details || "알 수 없는 오류"}`);
       }
     } catch (error) {
       console.error("추천 문구를 불러오는 중 오류가 발생했습니다:", error);
+      alert("추천 문구를 불러오는 중 네트워크 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

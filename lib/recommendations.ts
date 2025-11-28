@@ -7,7 +7,10 @@ export type Recommendation = {
 };
 
 // 추천 문구 데이터
+// ⚠️ 주의: 이제 Supabase 데이터베이스를 사용하므로 아래 데이터는 사용되지 않습니다.
+// 실제 데이터는 Supabase의 recommendations 테이블에서 가져옵니다.
 const recommendations: Recommendation[] = [
+  /* 주석처리됨 - Supabase 데이터베이스 사용
   // 바이브 코딩을 처음 겪는 사람들을 위한 격려 문구
   {
     id: "1",
@@ -171,7 +174,8 @@ const recommendations: Recommendation[] = [
     author: "Leonardo da Vinci",
     category: "coding",
   },
-];
+  */
+]; // 주석처리 끝
 
 export function getRandomRecommendation(): Recommendation {
   const randomIndex = Math.floor(Math.random() * recommendations.length);

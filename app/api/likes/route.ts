@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLikeItems, getLikeItem, incrementLike, addLikeItem } from "@/lib/likes";
+import { supabase } from "@/lib/supabase";
 
 // 좋아요 항목 목록 조회
 export async function GET(request: NextRequest) {
@@ -9,13 +9,27 @@ export async function GET(request: NextRequest) {
 
     if (id) {
       // 특정 항목 조회
-      const item = getLikeItem(id);
-      if (!item) {
+      const { data, error } = await supabase
+        .from("likes")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !data) {
         return NextResponse.json(
           { error: "항목을 찾을 수 없습니다." },
           { status: 404 }
         );
       }
+
+      const item = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        count: data.count,
+        createdAt: data.created_at,
+      };
+
       return NextResponse.json(item, {
         status: 200,
         headers: {
@@ -28,7 +42,31 @@ export async function GET(request: NextRequest) {
     }
 
     // 전체 목록 조회
-    const items = getLikeItems();
+    console.log("Fetching like items from Supabase...");
+    const { data, error } = await supabase
+      .from("likes")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      return NextResponse.json(
+        { error: "Failed to fetch like items", details: error.message },
+        { status: 500 }
+      );
+    }
+
+    console.log("Fetched like items:", data?.length || 0);
+
+    const items = data.map((item) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      count: item.count,
+      createdAt: item.created_at,
+    }));
+
     return NextResponse.json(items, {
       status: 200,
       headers: {
@@ -39,6 +77,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error("Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -52,18 +91,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id, title, description } = body;
 
-    // 기존 항목에 좋아요 추가 (다른 사용자들의 좋아요만 카운트)
+    // 기존 항목 조회 (좋아요는 클라이언트에서 관리하므로 서버는 카운트만 반환)
     if (id) {
-      const action = body.action; // 'like' or 'unlike'
-      const item = getLikeItem(id);
-      if (!item) {
+      const { data, error } = await supabase
+        .from("likes")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !data) {
         return NextResponse.json(
           { error: "항목을 찾을 수 없습니다." },
           { status: 404 }
         );
       }
-      // action이 없으면 기존 동작 (호환성 유지)
-      // 실제로는 클라이언트에서 좋아요 상태를 관리하고, 서버는 전체 카운트만 반환
+
+      const item = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        count: data.count,
+        createdAt: data.created_at,
+      };
+
       return NextResponse.json(item, {
         status: 200,
         headers: {
@@ -104,7 +154,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newItem = addLikeItem(title, description);
+    const { data, error } = await supabase
+      .from("likes")
+      .insert([
+        {
+          title: title.trim(),
+          description: description.trim(),
+          count: 0,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return NextResponse.json(
+        { error: "Failed to create like item" },
+        { status: 500 }
+      );
+    }
+
+    const newItem = {
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      count: data.count,
+      createdAt: data.created_at,
+    };
+
     return NextResponse.json(newItem, {
       status: 201,
       headers: {

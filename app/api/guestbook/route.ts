@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGuestbookEntries, addGuestbookEntry, deleteGuestbookEntry } from "@/lib/guestbook";
+import { supabase } from "@/lib/supabase";
 
 // 방명록 목록 조회
 export async function GET() {
   try {
-    const entries = getGuestbookEntries();
+    console.log("Fetching guestbook entries from Supabase...");
+    const { data, error } = await supabase
+      .from("guestbook")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      return NextResponse.json(
+        { error: "Failed to fetch guestbook entries", details: error.message },
+        { status: 500 }
+      );
+    }
+
+    console.log("Fetched entries:", data?.length || 0);
+
+    // UUID를 문자열로 변환하고 형식 맞추기
+    const entries = (data || []).map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      message: entry.message,
+      createdAt: entry.created_at,
+    }));
+
     return NextResponse.json(entries, {
       status: 200,
       headers: {
@@ -14,9 +38,11 @@ export async function GET() {
       "Access-Control-Allow-Headers": "Content-Type",
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error:", error);
+    console.error("Error stack:", error?.stack);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error?.message },
       { status: 500 }
     );
   }
@@ -57,7 +83,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newEntry = addGuestbookEntry(name, message);
+    console.log("Creating guestbook entry:", { name: name.trim(), message: message.trim() });
+    const { data, error } = await supabase
+      .from("guestbook")
+      .insert([
+        {
+          name: name.trim(),
+          message: message.trim(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      return NextResponse.json(
+        { error: "Failed to create guestbook entry", details: error.message },
+        { status: 500 }
+      );
+    }
+
+    console.log("Created entry:", data);
+
+    const newEntry = {
+      id: data.id,
+      name: data.name,
+      message: data.message,
+      createdAt: data.created_at,
+    };
+
     return NextResponse.json(newEntry, {
       status: 201,
       headers: {
@@ -67,9 +122,11 @@ export async function POST(request: NextRequest) {
       "Access-Control-Allow-Headers": "Content-Type",
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error in POST:", error);
+    console.error("Error stack:", error?.stack);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error?.message },
       { status: 500 }
     );
   }
@@ -88,12 +145,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deleted = deleteGuestbookEntry(id);
-    
-    if (!deleted) {
+    const { error } = await supabase
+      .from("guestbook")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Supabase error:", error);
       return NextResponse.json(
-        { error: "방명록을 찾을 수 없습니다." },
-        { status: 404 }
+        { error: "Failed to delete guestbook entry" },
+        { status: 500 }
       );
     }
 
@@ -109,9 +170,11 @@ export async function DELETE(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error in POST:", error);
+    console.error("Error stack:", error?.stack);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error?.message },
       { status: 500 }
     );
   }

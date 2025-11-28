@@ -49,6 +49,10 @@ export const profileData: ProfileData = {
     "Tailwind CSS",
     "Storybook",
   ],
+  // ⚠️ 주의: 이제 Supabase 데이터베이스를 사용하므로 projects와 experiences는 API를 통해 가져옵니다.
+  // 아래 하드코딩된 데이터는 주석처리되었습니다.
+  projects: [],
+  /* 주석처리됨 - Supabase 데이터베이스 사용 (/api/projects)
   projects: [
     {
       title: "데이터 시각화 대시보드",
@@ -99,6 +103,9 @@ export const profileData: ProfileData = {
       ],
     },
   ],
+  */
+  experiences: [],
+  /* 주석처리됨 - Supabase 데이터베이스 사용 (/api/experiences)
   experiences: [
     {
       period: "2024.03 - 현재",
@@ -117,6 +124,7 @@ export const profileData: ProfileData = {
       ],
     },
   ],
+  */
   contacts: [
     {
       label: "이메일",
